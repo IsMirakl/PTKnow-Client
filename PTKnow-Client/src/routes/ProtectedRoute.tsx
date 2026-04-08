@@ -13,11 +13,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredRole,
 }) => {
   const { user, isLoading, isInitialized } = useAuth();
-  const token = localStorage.getItem('accessToken');
-
-  if (!token) {
-    return <Navigate to="/auth" replace />;
-  }
 
   if (!isInitialized || isLoading) {
     return null;

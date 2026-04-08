@@ -221,6 +221,12 @@
   gap: 12px;
 }
 
+.lessonCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .lessonRow {
   display: flex;
   justify-content: space-between;
@@ -258,6 +264,74 @@
   white-space: nowrap;
 }
 
+.lessonControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lessonType {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.lessonStateSelect {
+  border: 1px solid #cdd9ee;
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: #fff;
+}
+
+.inlineAction,
+.inlineDanger,
+.managementInputRow button,
+.materialDelete {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.inlineAction,
+.managementInputRow button {
+  background: #0956c2;
+  color: #fff;
+}
+
+.inlineDanger,
+.materialDelete {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.materialsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.materialItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.materialLink {
+  color: #0956c2;
+  text-decoration: none;
+  word-break: break-all;
+}
+
 .detailsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -274,6 +348,67 @@
   font-size: 14px;
   font-weight: 600;
   color: #111827;
+}
+
+.managementGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.managementCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f4;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.managementCard h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.managementInputRow {
+  display: flex;
+  gap: 10px;
+}
+
+.managementInputRow input {
+  flex: 1;
+  border: 1px solid #cdd9ee;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.managementList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.managementItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 10px;
+}
+
+.managementItem div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.managementItem span {
+  color: #64748b;
+  font-size: 13px;
 }
 
 .settingsGrid {

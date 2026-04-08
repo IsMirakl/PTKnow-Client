@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Header from '../Components/Header';
+
 import Footer from '../Components/Footer';
+import Header from '../Components/Header';
 import { useProfile } from '../hooks/useProfile';
 import { getAvatarUrl } from '../utils/fileUtils';
 import styles from '../styles/pages/ProfileEditPage.module.css';
@@ -18,7 +19,7 @@ const ProfileEditPage: React.FC = () => {
     loading,
     error,
     getMyProfile,
-    updateProfile,
+    replaceProfile,
     updateAvatar,
     clearError,
   } = useProfile();
@@ -72,7 +73,7 @@ const ProfileEditPage: React.FC = () => {
       clearError();
       setIsSubmitting(true);
       try {
-        await updateProfile({
+        await replaceProfile({
           fullName: formData.fullName.trim(),
           handle: formData.handle.trim(),
           summary: formData.summary.trim(),
@@ -82,7 +83,7 @@ const ProfileEditPage: React.FC = () => {
         setIsSubmitting(false);
       }
     },
-    [clearError, formData, navigate, updateProfile]
+    [clearError, formData, navigate, replaceProfile]
   );
 
   const loadImage = useCallback((file: File): Promise<HTMLImageElement> => {

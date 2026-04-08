@@ -19,6 +19,13 @@
   margin-bottom: 24px;
 }
 
+.filters {
+  display: grid;
+  grid-template-columns: minmax(240px, 2fr) repeat(3, minmax(160px, 1fr)) auto;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
 .title {
   font-size: 28px;
   font-weight: 700;
@@ -44,6 +51,27 @@
   opacity: 0.9;
 }
 
+.searchInput,
+.filterSelect {
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  padding: 0 14px;
+  background: #fff;
+}
+
+.searchButton,
+.paginationButton {
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .stateMessage {
   color: #1e293b;
   margin-bottom: 16px;
@@ -60,6 +88,12 @@
 .table {
   display: grid;
   gap: 12px;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
 }
 
 .tableHeader,
@@ -90,6 +124,18 @@
   gap: 4px;
 }
 
+.userInfoButton {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
 .userName {
   font-weight: 600;
   color: #0f172a;
@@ -111,6 +157,7 @@
   border-radius: 10px;
   border: 1px solid #cbd5f5;
   background: #ffffff;
+  margin-bottom: 8px;
 }
 
 .savingHint {
@@ -120,7 +167,66 @@
   color: #475569;
 }
 
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.paginationInfo {
+  color: #475569;
+}
+
+.detailCard {
+  background: #f8fafc;
+  border-radius: 18px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  height: fit-content;
+}
+
+.detailTitle {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.detailEmpty {
+  color: #64748b;
+}
+
+.detailList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detailItem span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.breakWord {
+  word-break: break-all;
+}
+
 @media (max-width: 960px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .filters {
+    grid-template-columns: 1fr;
+  }
+
   .tableHeader {
     display: none;
   }

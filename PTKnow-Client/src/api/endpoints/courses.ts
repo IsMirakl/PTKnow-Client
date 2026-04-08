@@ -6,29 +6,45 @@ import type {
   UpdateCourseDTO,
   UpdateCourseTeacherDTO,
 } from '../../types/CourseCard';
-import type { UserSummaryDTO } from '../../types/user';
+import type { PageResponseDTO } from '../../types/common';
 import { api } from '../axiosConfig';
 
+export interface CourseListParams {
+  page?: number;
+  size?: number;
+  sort?: string;
+  q?: string;
+  state?: string;
+  tag?: string;
+}
+
 export const courseCardApi = {
-  getAllCourses: async (): Promise<CourseDTO[]> => {
-    const response = await api.get('/v1/course');
-    const payload = response.data as unknown;
-    if (Array.isArray(payload)) {
-      return payload as CourseDTO[];
-    }
-    if (payload && typeof payload === 'object') {
-      const data = payload as {
-        items?: CourseDTO[];
-        courses?: CourseDTO[];
-        data?: CourseDTO[];
-        content?: CourseDTO[];
-      };
-      if (Array.isArray(data.items)) return data.items;
-      if (Array.isArray(data.courses)) return data.courses;
-      if (Array.isArray(data.data)) return data.data;
-      if (Array.isArray(data.content)) return data.content;
-    }
-    return [];
+  getAllCourses: async (
+    params?: CourseListParams
+  ): Promise<PageResponseDTO<CourseDTO>> => {
+    const response = await api.get('/v1/course', {
+      params,
+    });
+    const payload = response.data as Partial<PageResponseDTO<CourseDTO>>;
+
+    return {
+      items: Array.isArray(payload.items) ? payload.items : [],
+      page: typeof payload.page === 'number' ? payload.page : params?.page ?? 0,
+      size: typeof payload.size === 'number' ? payload.size : params?.size ?? 20,
+      totalItems:
+        typeof payload.totalItems === 'number'
+          ? payload.totalItems
+          : Array.isArray(payload.items)
+            ? payload.items.length
+            : 0,
+      totalPages:
+        typeof payload.totalPages === 'number'
+          ? payload.totalPages
+          : Array.isArray(payload.items) && payload.items.length > 0
+            ? 1
+            : 0,
+      hasNext: Boolean(payload.hasNext),
+    };
   },
 
   createCourse: async (
@@ -110,9 +126,8 @@ export const courseCardApi = {
   addCourseTeacher: async (
     id: number,
     data: UpdateCourseTeacherDTO
-  ): Promise<CourseTeacherDTO> => {
-    const response = await api.post(`/v1/course/${String(id)}/teachers`, data);
-    return response.data;
+  ): Promise<void> => {
+    await api.post(`/v1/course/${String(id)}/teachers`, data);
   },
 
   removeCourseTeacher: async (id: number, teacherId: string): Promise<void> => {
@@ -122,11 +137,8 @@ export const courseCardApi = {
   addCourseEditor: async (
     id: number,
     userId: string
-  ): Promise<CourseTeacherDTO> => {
-    const response = await api.post(
-      `/v1/course/${String(id)}/editors/${userId}`
-    );
-    return response.data;
+  ): Promise<void> => {
+    await api.post(`/v1/course/${String(id)}/editors/${userId}`);
   },
 
   removeCourseEditor: async (id: number, userId: string): Promise<void> => {
@@ -138,12 +150,12 @@ export const courseCardApi = {
     return response.data;
   },
 
-  getCourseStudents: async (id: number): Promise<UserSummaryDTO[]> => {
+  getCourseStudents: async (id: number): Promise<EnrollmentDTO[]> => {
     const response = await api.get(`/v1/course/${String(id)}/students`);
     return response.data;
   },
 
-  getCourseMembers: async (id: number): Promise<UserSummaryDTO[]> => {
+  getCourseMembers: async (id: number): Promise<EnrollmentDTO[]> => {
     const response = await api.get(`/v1/course/${String(id)}/members`);
     return response.data;
   },

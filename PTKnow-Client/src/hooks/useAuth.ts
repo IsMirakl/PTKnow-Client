@@ -1,4 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import {
+  createContext,
+  createElement,
+  useState,
+  useEffect,
+  useCallback,
+  useContext,
+  type PropsWithChildren,
+} from 'react';
+
 import { authAPI } from '../api';
 import type { ProfileResponseDTO } from '../types/profile';
 import type {
@@ -7,6 +16,7 @@ import type {
   RegisterData,
   RegistrationDTO,
 } from '../types/user';
+import { getAuthActionErrorMessage } from '../utils/authError';
 
 const normalizeRole = (role?: string | null) => {
   if (!role) {
@@ -22,6 +32,7 @@ const decodeJwtPayload = (
   if (!token) return null;
   const payload = token.split('.')[1];
   if (!payload) return null;
+
   try {
     const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
     const padded = normalized.padEnd(
@@ -29,8 +40,7 @@ const decodeJwtPayload = (
       '='
     );
     const decoded = atob(padded);
-    const data = JSON.parse(decoded) as { role?: string; sub?: string };
-    return data;
+    return JSON.parse(decoded) as { role?: string; sub?: string };
   } catch {
     return null;
   }
@@ -44,6 +54,7 @@ const buildUser = (
   if (!profile && !token && !existingUser) {
     return null;
   }
+
   const payload = decodeJwtPayload(token);
   const role = normalizeRole(
     profile?.role ?? payload?.role ?? existingUser?.role
@@ -65,10 +76,12 @@ const getStoredUser = (): User | null => {
   if (!storedUser) {
     return null;
   }
+
   if (storedUser === 'undefined') {
     localStorage.removeItem('userData');
     return null;
   }
+
   try {
     const parsed = JSON.parse(storedUser) as User;
     const normalizedRole = normalizeRole(parsed.role);
@@ -88,6 +101,7 @@ const getStoredAccessToken = (): string | null => {
     }
     return null;
   }
+
   return token;
 };
 
@@ -98,13 +112,36 @@ const persistUser = (nextUser: User | null) => {
       normalizedRole && normalizedRole !== nextUser.role
         ? { ...nextUser, role: normalizedRole }
         : nextUser;
+
     localStorage.setItem('userData', JSON.stringify(payload));
-  } else {
-    localStorage.removeItem('userData');
+    return;
   }
+
+  localStorage.removeItem('userData');
 };
 
-export const useAuth = () => {
+type UseAuthValue = {
+  user: User | null;
+  isLoading: boolean;
+  error: string | null;
+  isInitialized: boolean;
+  login: (data: LoginData) => Promise<boolean>;
+  register: (data: RegisterData) => Promise<boolean>;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<boolean>;
+  clearError: () => void;
+  parseFullName: (fullName: string) => {
+    lastName: string;
+    firstName: string;
+    middleName: string;
+  };
+};
+
+const AuthContext = createContext<UseAuthValue | null>(null);
+let authInitializationPromise: Promise<boolean> | null = null;
+const COMMAND_PALETTE_HINT_KEY = 'commandPaletteHintPending';
+
+const useProvideAuth = (): UseAuthValue => {
   const [user, setUser] = useState<User | null>(() => getStoredUser());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,48 +166,21 @@ export const useAuth = () => {
     };
   };
 
-  const getErrorMessage = (
-    err: unknown,
-    fallback: string,
-    conflictMessage?: string
-  ) => {
-    if (typeof err === 'object' && err !== null && 'response' in err) {
-      const response = err as {
-        response?: { data?: { message?: string } | string; status?: number };
-      };
-      const status = response.response?.status;
-      if (status === 409 && conflictMessage) {
-        return conflictMessage;
-      }
-      const data = response.response?.data;
-      if (typeof data === 'string') {
-        return status ? `${data} (${status})` : data;
-      }
-      if (
-        data &&
-        typeof data === 'object' &&
-        'message' in data &&
-        data.message
-      ) {
-        return status ? `${data.message} (${status})` : data.message;
-      }
-      return status ? `${fallback} (${status})` : fallback;
-    }
-    if (err instanceof Error) {
-      return err.message || fallback;
-    }
-    return fallback;
-  };
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
 
   const login = useCallback(async (data: LoginData): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
+
     try {
       const tokenResponse = await authAPI.login(data);
       let token =
         typeof tokenResponse === 'string' && tokenResponse.trim()
           ? tokenResponse.trim()
           : getStoredAccessToken();
+
       if (!token) {
         try {
           await authAPI.refreshToken();
@@ -179,18 +189,21 @@ export const useAuth = () => {
           console.warn('Failed to refresh token after login:', refreshError);
         }
       }
+
       let profile: ProfileResponseDTO | null = null;
       try {
         profile = await authAPI.getProfile();
       } catch (profileError) {
         console.warn('Failed to load profile after login:', profileError);
       }
+
       const nextUser = buildUser(profile, token, getStoredUser());
       setUser(nextUser);
       persistUser(nextUser);
+      sessionStorage.setItem(COMMAND_PALETTE_HINT_KEY, 'true');
       return true;
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Ошибка входа'));
+      setError(getAuthActionErrorMessage(err, 'login'));
       return false;
     } finally {
       setIsLoading(false);
@@ -200,6 +213,7 @@ export const useAuth = () => {
   const register = useCallback(async (data: RegisterData): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
+
     try {
       const registerData: RegistrationDTO = {
         fullName: buildFullName(data.firstName, data.lastName, data.middleName),
@@ -213,15 +227,18 @@ export const useAuth = () => {
         typeof tokenResponse === 'string' && tokenResponse.trim()
           ? tokenResponse.trim()
           : getStoredAccessToken();
+
       if (!token) {
         const loginToken = await authAPI.login({
           email: data.email,
           password: data.password,
         });
+
         token =
           typeof loginToken === 'string' && loginToken.trim()
             ? loginToken.trim()
             : getStoredAccessToken();
+
         if (!token) {
           try {
             await authAPI.refreshToken();
@@ -234,6 +251,7 @@ export const useAuth = () => {
           }
         }
       }
+
       let profile: ProfileResponseDTO | null = null;
       try {
         profile = await authAPI.getProfile();
@@ -243,18 +261,14 @@ export const useAuth = () => {
           profileError
         );
       }
+
       const nextUser = buildUser(profile, token, getStoredUser());
       setUser(nextUser);
       persistUser(nextUser);
+      sessionStorage.setItem(COMMAND_PALETTE_HINT_KEY, 'true');
       return true;
     } catch (err: unknown) {
-      setError(
-        getErrorMessage(
-          err,
-          'Ошибка регистрации',
-          'Пользователь уже зарегистрирован.'
-        )
-      );
+      setError(getAuthActionErrorMessage(err, 'register'));
       return false;
     } finally {
       setIsLoading(false);
@@ -275,18 +289,20 @@ export const useAuth = () => {
 
   const checkAuth = useCallback(async (): Promise<boolean> => {
     setIsLoading(true);
+
     try {
       let token = getStoredAccessToken();
       if (!token) {
         try {
           await authAPI.refreshToken();
           token = getStoredAccessToken();
-        } catch (refreshError) {
+        } catch {
           persistUser(null);
           setUser(null);
           return false;
         }
       }
+
       const profile = await authAPI.getProfile();
       const nextUser = buildUser(profile, token, getStoredUser());
       setUser(nextUser);
@@ -302,6 +318,7 @@ export const useAuth = () => {
       ) {
         localStorage.removeItem('accessToken');
       }
+
       persistUser(null);
       setUser(null);
       return false;
@@ -311,12 +328,35 @@ export const useAuth = () => {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     const initializeAuth = async () => {
-      await checkAuth();
-      setIsInitialized(true);
+      if (isInitialized || authInitializationPromise) {
+        if (authInitializationPromise) {
+          await authInitializationPromise;
+        }
+        if (!cancelled) {
+          setIsInitialized(true);
+        }
+        return;
+      }
+
+      authInitializationPromise = checkAuth();
+      try {
+        await authInitializationPromise;
+      } finally {
+        authInitializationPromise = null;
+        if (!cancelled) {
+          setIsInitialized(true);
+        }
+      }
     };
+
     initializeAuth();
-  }, [checkAuth]);
+    return () => {
+      cancelled = true;
+    };
+  }, [checkAuth, isInitialized]);
 
   return {
     user,
@@ -327,6 +367,21 @@ export const useAuth = () => {
     register,
     logout,
     checkAuth,
+    clearError,
     parseFullName,
   };
+};
+
+export const AuthProvider: React.FC<PropsWithChildren> = ({ children }) => {
+  const auth = useProvideAuth();
+  return createElement(AuthContext.Provider, { value: auth }, children);
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+
+  return context;
 };

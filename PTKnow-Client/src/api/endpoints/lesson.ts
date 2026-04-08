@@ -4,7 +4,6 @@ import type {
   UpdateLessonDTO,
   UpdateLessonStateDTO,
 } from '../../types/lesson';
-import type { FileMetaDTO } from '../../types/CourseCard';
 import { api } from '../axiosConfig';
 
 export const lessonApi = {
@@ -66,7 +65,7 @@ export const lessonApi = {
   addLessonMaterials: async (
     lessonId: number,
     file: File
-  ): Promise<FileMetaDTO> => {
+  ): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
     const response = await api.post(
@@ -82,7 +81,7 @@ export const lessonApi = {
   },
   deleteLessonMaterial: async (
     lessonId: number,
-    fileId: number
+    fileId: string
   ): Promise<void> => {
     await api.delete(
       `/v1/lessons/${String(lessonId)}/materials/${String(fileId)}`

@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import Header from '../Components/Header';
-import { useProfile } from '../hooks/useProfile';
-import { useAuth } from '../hooks/useAuth';
 
 import IconBook from '../assets/icons/book.svg';
+import Header from '../Components/Header';
 import { CourseList } from '../Components/CourseList';
 import Footer from '../Components/Footer';
 import { ProfileContactsItem } from '../Components/ui/profile/ProfileContactsItem';
 import { ProfileHeader } from '../Components/ui/profile/ProfileHeader';
-import { normalizeRole } from '../utils/roleUtils';
+import { useAuth } from '../hooks/useAuth';
+import { useProfile } from '../hooks/useProfile';
 import styles from '../styles/pages/ProfilePage.module.css';
+import { normalizeRole } from '../utils/roleUtils';
 
 export const ProfilePage = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -19,11 +19,7 @@ export const ProfilePage = () => {
   const { logout } = useAuth();
   const [isMyProfile, setIsMyProfile] = useState(false);
   const navigate = useNavigate();
-  const storedUser = localStorage.getItem('userData');
-  const storedEmail = storedUser
-    ? (JSON.parse(storedUser) as { email?: string } | null)?.email
-    : null;
-  const contactEmail = profile?.email || storedEmail || '';
+  const contactEmail = profile?.email || '';
 
   useEffect(() => {
     if (handle) {
@@ -35,19 +31,68 @@ export const ProfilePage = () => {
     }
   }, [handle, getProfileByHandle, getMyProfile]);
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="loading">
-        <div>Загрузка профиля...</div>
-      </div>
-    );
+      <>
+        <Header />
+        <div className={styles.container}>
+          <div className={styles.profileCard}>
+            <div className={styles.profileSkeletonHeader}>
+              <div className={styles.profileSkeletonAvatar} />
+              <div className={styles.profileSkeletonMain}>
+                <div className={styles.profileSkeletonName} />
+                <div className={styles.profileSkeletonHandle} />
+                <div className={styles.profileSkeletonBadges}>
+                  <span className={styles.profileSkeletonBadge} />
+                  <span className={styles.profileSkeletonBadgeShort} />
+                </div>
+              </div>
+              <div className={styles.profileSkeletonActions}>
+                <span className={styles.profileSkeletonAction} />
+                <span className={styles.profileSkeletonActionShort} />
+              </div>
+            </div>
 
-  if (error)
+            <div className={styles.profileSkeletonInfo}>
+              <div className={styles.profileSkeletonSectionTitle} />
+              <div className={styles.profileSkeletonLine} />
+              <div className={styles.profileSkeletonLine} />
+              <div className={styles.profileSkeletonLineShort} />
+            </div>
+
+            <div className={styles.profileSkeletonContacts}>
+              <div className={styles.profileSkeletonContactItem}>
+                <span className={styles.profileSkeletonContactIcon} />
+                <div className={styles.profileSkeletonContactText}>
+                  <span className={styles.profileSkeletonContactLabel} />
+                  <span className={styles.profileSkeletonContactValue} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.coursesAttendTitle}>
+            <div className={styles.courseAttendIcon}>
+              <img src={IconBook} alt="" />
+            </div>
+            <h3>Курсы, которые я посещаю</h3>
+          </div>
+          <div className={styles.profileMyCourse}>
+            <CourseList showLoadMore={false} isLoading limit={3} />
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  if (error) {
     return (
       <div className="error">
         <div>Ошибка: {error}</div>
       </div>
     );
+  }
 
   if (handle && notFound) {
     return (
@@ -115,15 +160,13 @@ export const ProfilePage = () => {
         </div>
         <div className={styles.coursesAttendTitle}>
           <div className={styles.courseAttendIcon}>
-            <img src={IconBook} />
+            <img src={IconBook} alt="" />
           </div>
           <h3>Курсы, которые я посещаю</h3>
         </div>
         <div className={styles.profileMyCourse}>
           {enrolledCourseCards.length === 0 ? (
-            <p className={styles.profileEmptyCourses}>
-              Пока нет записей на курсы.
-            </p>
+            <p className={styles.profileEmptyCourses}>Пока нет записей на курсы.</p>
           ) : (
             <CourseList
               limit={3}

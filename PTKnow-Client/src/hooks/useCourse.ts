@@ -13,7 +13,7 @@ export const useCourse = (options?: { enabled?: boolean }) => {
 
     try {
       const coursesData = await courseCardApi.getAllCourses();
-      setCourse(coursesData);
+      setCourse(coursesData.items);
     } catch (err) {
       setError('Ошибка загрузки курсов');
       console.error('Error fetching courses:', err);

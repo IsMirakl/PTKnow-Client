@@ -16,10 +16,15 @@ import { useLesson } from '../hooks/useLessons';
 import { courseCardApi } from '../api';
 import { useAuth } from '../hooks/useAuth';
 import { useMyEnrollments } from '../hooks/useMyEnrollments';
-import type { CourseTeacherDTO } from '../types/CourseCard';
+import type {
+  CourseTeacherDTO,
+  EnrollmentDTO,
+  FileMetaDTO,
+} from '../types/CourseCard';
 import { AuthImage } from '../Components/AuthImage';
 import { FormAlert } from '../Components/ui/forms/FormAlert';
 import styles from '../styles/pages/CourseDetailsPage.module.css';
+import { buildContinueCourseState, saveContinueCourseState } from '../utils/continueCourse';
 
 const formatLessonTime = (value: string) => {
   const date = new Date(value);
@@ -33,6 +38,8 @@ const formatLessonTime = (value: string) => {
     minute: '2-digit',
   }).format(date);
 };
+
+const LESSON_STATES = ['PLANNED', 'ONGOING', 'CANCELLED', 'FINISHED'] as const;
 
 const CourseDetailsPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -51,6 +58,8 @@ const CourseDetailsPage: React.FC = () => {
   } = useCourseStore();
   const {
     getCourseLessons,
+    updateLessonState,
+    deleteLessonMaterial,
     loading: lessonsLoading,
     error: lessonsError,
     lessons: fetchedLessons,
@@ -67,6 +76,16 @@ const CourseDetailsPage: React.FC = () => {
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
   const [settingsLoading, setSettingsLoading] = useState(false);
+  const [courseTeachers, setCourseTeachers] = useState<CourseTeacherDTO[]>([]);
+  const [courseStudents, setCourseStudents] = useState<EnrollmentDTO[]>([]);
+  const [courseMembers, setCourseMembers] = useState<EnrollmentDTO[]>([]);
+  const [teacherIdInput, setTeacherIdInput] = useState('');
+  const [editorIdInput, setEditorIdInput] = useState('');
+  const [peopleLoading, setPeopleLoading] = useState(false);
+  const [peopleError, setPeopleError] = useState<string | null>(null);
+  const [peopleSuccess, setPeopleSuccess] = useState<string | null>(null);
+  const [lessonActionError, setLessonActionError] = useState<string | null>(null);
+  const [busyLessonIds, setBusyLessonIds] = useState<Set<number>>(new Set());
 
   const normalizedLessons = useMemo(
     () => (Array.isArray(fetchedLessons) ? fetchedLessons : []),
@@ -91,11 +110,21 @@ const CourseDetailsPage: React.FC = () => {
   }, [sortedLessons]);
 
   useEffect(() => {
+    if (!resolvedCourseId || !course?.name) {
+      return;
+    }
+
+    saveContinueCourseState(
+      buildContinueCourseState(resolvedCourseId, course.name, nextLesson)
+    );
+  }, [course?.name, nextLesson, resolvedCourseId]);
+
+  useEffect(() => {
     if (!resolvedCourseId) {
       return;
     }
 
-    fetchCourse(resolvedCourseId);
+    fetchCourse(resolvedCourseId, true);
     getCourseLessons(resolvedCourseId).catch(error => {
       console.error('Ошибка загрузки уроков:', error);
     });
@@ -136,6 +165,15 @@ const CourseDetailsPage: React.FC = () => {
     }
   }, [navigate, resolvedCourseId]);
 
+  const handleEditLesson = useCallback(
+    (lessonId: number) => {
+      if (resolvedCourseId) {
+        navigate(`/courses/${resolvedCourseId}/lessons/${lessonId}/edit`);
+      }
+    },
+    [navigate, resolvedCourseId]
+  );
+
   const canDeleteCourse = useMemo(() => {
     if (!course || !user) return false;
     const normalizedRole = user.role?.toUpperCase() ?? '';
@@ -147,6 +185,34 @@ const CourseDetailsPage: React.FC = () => {
     const normalizedRole = user.role?.toUpperCase() ?? '';
     return normalizedRole === 'ADMIN' || user.id === course.owner?.id;
   }, [course, user]);
+
+  const refreshPeople = useCallback(async () => {
+    if (!resolvedCourseId || !canManageLessons) {
+      return;
+    }
+
+    setPeopleLoading(true);
+    setPeopleError(null);
+
+    try {
+      const [teachersData, studentsData, membersData] = await Promise.all([
+        courseCardApi.getCourseTeachers(resolvedCourseId),
+        courseCardApi.getCourseStudents(resolvedCourseId),
+        courseCardApi.getCourseMembers(resolvedCourseId),
+      ]);
+      setCourseTeachers(teachersData);
+      setCourseStudents(studentsData);
+      setCourseMembers(membersData);
+    } catch (error) {
+      setPeopleError(
+        error instanceof Error
+          ? error.message
+          : 'Не удалось загрузить участников курса.'
+      );
+    } finally {
+      setPeopleLoading(false);
+    }
+  }, [canManageLessons, resolvedCourseId]);
 
   const teachers = useMemo(() => {
     if (!course) return [];
@@ -174,6 +240,12 @@ const CourseDetailsPage: React.FC = () => {
     const normalizedRole = user.role?.toUpperCase() ?? '';
     return normalizedRole !== 'ADMIN' && normalizedRole !== 'TEACHER';
   }, [user]);
+
+  useEffect(() => {
+    refreshPeople().catch(error => {
+      console.error('Error loading course people:', error);
+    });
+  }, [refreshPeople]);
 
   const handleDeleteCourse = useCallback(async () => {
     if (!resolvedCourseId || isDeleting) {
@@ -243,7 +315,7 @@ const CourseDetailsPage: React.FC = () => {
 
     setSettingsLoading(true);
     try {
-      await courseCardApi.updateCourse(resolvedCourseId, {
+      await courseCardApi.replaceCourse(resolvedCourseId, {
         name: settingsName.trim(),
         description: settingsDescription.trim(),
         tags: nextTags.length > 0 ? nextTags : course.tags ?? [],
@@ -260,7 +332,7 @@ const CourseDetailsPage: React.FC = () => {
         }
       }
 
-      await fetchCourse(resolvedCourseId);
+      await fetchCourse(resolvedCourseId, true);
       setSettingsSuccess('Настройки курса обновлены.');
     } catch (error) {
       const message =
@@ -279,6 +351,140 @@ const CourseDetailsPage: React.FC = () => {
     settingsStatus,
     settingsTags,
   ]);
+
+  const handleAddTeacher = useCallback(async () => {
+    if (!resolvedCourseId || !teacherIdInput.trim()) {
+      return;
+    }
+
+    setPeopleError(null);
+    setPeopleSuccess(null);
+    try {
+      await courseCardApi.addCourseTeacher(resolvedCourseId, {
+        teacherId: teacherIdInput.trim(),
+      });
+      setTeacherIdInput('');
+      await refreshPeople();
+      await fetchCourse(resolvedCourseId, true);
+      setPeopleSuccess('Преподаватель добавлен.');
+    } catch (error) {
+      setPeopleError(
+        error instanceof Error ? error.message : 'Не удалось добавить преподавателя.'
+      );
+    }
+  }, [fetchCourse, refreshPeople, resolvedCourseId, teacherIdInput]);
+
+  const handleRemoveTeacher = useCallback(
+    async (teacherId: string) => {
+      if (!resolvedCourseId) {
+        return;
+      }
+
+      setPeopleError(null);
+      setPeopleSuccess(null);
+      try {
+        await courseCardApi.removeCourseTeacher(resolvedCourseId, teacherId);
+        await refreshPeople();
+        await fetchCourse(resolvedCourseId, true);
+        setPeopleSuccess('Преподаватель удалён.');
+      } catch (error) {
+        setPeopleError(
+          error instanceof Error
+            ? error.message
+            : 'Не удалось удалить преподавателя.'
+        );
+      }
+    },
+    [fetchCourse, refreshPeople, resolvedCourseId]
+  );
+
+  const handleAddEditor = useCallback(async () => {
+    if (!resolvedCourseId || !editorIdInput.trim()) {
+      return;
+    }
+
+    setPeopleError(null);
+    setPeopleSuccess(null);
+    try {
+      await courseCardApi.addCourseEditor(resolvedCourseId, editorIdInput.trim());
+      setEditorIdInput('');
+      await refreshPeople();
+      await fetchCourse(resolvedCourseId, true);
+      setPeopleSuccess('Редактор добавлен.');
+    } catch (error) {
+      setPeopleError(
+        error instanceof Error ? error.message : 'Не удалось добавить редактора.'
+      );
+    }
+  }, [editorIdInput, fetchCourse, refreshPeople, resolvedCourseId]);
+
+  const handleRemoveEditor = useCallback(
+    async (editorId: string) => {
+      if (!resolvedCourseId) {
+        return;
+      }
+
+      setPeopleError(null);
+      setPeopleSuccess(null);
+      try {
+        await courseCardApi.removeCourseEditor(resolvedCourseId, editorId);
+        await refreshPeople();
+        await fetchCourse(resolvedCourseId, true);
+        setPeopleSuccess('Редактор удалён.');
+      } catch (error) {
+        setPeopleError(
+          error instanceof Error ? error.message : 'Не удалось удалить редактора.'
+        );
+      }
+    },
+    [fetchCourse, refreshPeople, resolvedCourseId]
+  );
+
+  const handleLessonStateChange = useCallback(
+    async (lessonId: number, state: string) => {
+      setLessonActionError(null);
+      setBusyLessonIds(prev => new Set(prev).add(lessonId));
+      try {
+        await updateLessonState(lessonId, { state });
+      } catch (error) {
+        setLessonActionError(
+          error instanceof Error
+            ? error.message
+            : 'Не удалось обновить состояние урока.'
+        );
+      } finally {
+        setBusyLessonIds(prev => {
+          const next = new Set(prev);
+          next.delete(lessonId);
+          return next;
+        });
+      }
+    },
+    [updateLessonState]
+  );
+
+  const handleDeleteMaterial = useCallback(
+    async (lessonId: number, material: FileMetaDTO) => {
+      setLessonActionError(null);
+      setBusyLessonIds(prev => new Set(prev).add(lessonId));
+      try {
+        await deleteLessonMaterial(lessonId, material.id);
+      } catch (error) {
+        setLessonActionError(
+          error instanceof Error
+            ? error.message
+            : 'Не удалось удалить материал урока.'
+        );
+      } finally {
+        setBusyLessonIds(prev => {
+          const next = new Set(prev);
+          next.delete(lessonId);
+          return next;
+        });
+      }
+    },
+    [deleteLessonMaterial]
+  );
 
   if (!resolvedCourseId) {
     return (
@@ -435,6 +641,9 @@ const CourseDetailsPage: React.FC = () => {
 
           <div className={styles.blockCard}>
             <div className={styles.blockHeader}>Все уроки</div>
+            {lessonActionError && (
+              <FormAlert message={lessonActionError} variant="error" />
+            )}
             {sortedLessons.length === 0 ? (
               <p className={styles.blockText}>
                 Уроки пока не запланированы.
@@ -442,16 +651,77 @@ const CourseDetailsPage: React.FC = () => {
             ) : (
               <div className={styles.lessonTable}>
                 {sortedLessons.map(lesson => (
-                  <div key={lesson.id} className={styles.lessonRow}>
-                    <div className={styles.lessonInfo}>
-                      <p className={styles.lessonName}>{lesson.name}</p>
-                      <p className={styles.lessonMeta}>
-                        {lesson.description || 'Описание будет добавлено позже.'}
-                      </p>
+                  <div key={lesson.id} className={styles.lessonCard}>
+                    <div className={styles.lessonRow}>
+                      <div className={styles.lessonInfo}>
+                        <p className={styles.lessonName}>{lesson.name}</p>
+                        <p className={styles.lessonMeta}>
+                          {lesson.description || 'Описание будет добавлено позже.'}
+                        </p>
+                      </div>
+                      <div className={styles.lessonTime}>
+                        {formatLessonTime(lesson.beginAt)}
+                      </div>
                     </div>
-                    <div className={styles.lessonTime}>
-                      {formatLessonTime(lesson.beginAt)}
+                    <div className={styles.lessonControls}>
+                      <span className={styles.lessonType}>{lesson.type}</span>
+                      <span className={styles.lessonType}>
+                        Материалов: {lesson.materials.length}
+                      </span>
+                      {canManageLessons && (
+                        <>
+                          <select
+                            className={styles.lessonStateSelect}
+                            value={lesson.state}
+                            onChange={event =>
+                              handleLessonStateChange(lesson.id, event.target.value)
+                            }
+                            disabled={busyLessonIds.has(lesson.id)}
+                          >
+                            {LESSON_STATES.map(state => (
+                              <option key={state} value={state}>
+                                {state}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            className={styles.inlineAction}
+                            onClick={() => handleEditLesson(lesson.id)}
+                          >
+                            Редактировать
+                          </button>
+                        </>
+                      )}
                     </div>
+                    {lesson.materials.length > 0 && (
+                      <div className={styles.materialsList}>
+                        {lesson.materials.map(material => (
+                          <div key={material.id} className={styles.materialItem}>
+                            <a
+                              href={material.downloadUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className={styles.materialLink}
+                            >
+                              {material.originalFilename}
+                            </a>
+                            {canManageLessons && (
+                              <button
+                                type="button"
+                                className={styles.materialDelete}
+                                onClick={() =>
+                                  handleDeleteMaterial(lesson.id, material)
+                                }
+                                disabled={busyLessonIds.has(lesson.id)}
+                              >
+                                Удалить
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -496,6 +766,119 @@ const CourseDetailsPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {canManageLessons && (
+            <div className={styles.blockCard}>
+              <div className={styles.blockHeader}>Команда и участники</div>
+              {peopleError && <FormAlert message={peopleError} variant="error" />}
+              {peopleSuccess && (
+                <FormAlert message={peopleSuccess} variant="success" />
+              )}
+              <div className={styles.managementGrid}>
+                <div className={styles.managementCard}>
+                  <h3>Преподаватели</h3>
+                  <div className={styles.managementInputRow}>
+                    <input
+                      type="text"
+                      value={teacherIdInput}
+                      onChange={event => setTeacherIdInput(event.target.value)}
+                      placeholder="UUID преподавателя"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddTeacher}
+                      disabled={peopleLoading}
+                    >
+                      Добавить
+                    </button>
+                  </div>
+                  <div className={styles.managementList}>
+                    {courseTeachers.map(teacher => (
+                      <div key={teacher.id} className={styles.managementItem}>
+                        <div>
+                          <strong>{teacher.fullName}</strong>
+                          <span>{teacher.email}</span>
+                        </div>
+                        {!teacher.owner && (
+                          <button
+                            type="button"
+                            className={styles.inlineDanger}
+                            onClick={() => handleRemoveTeacher(teacher.id)}
+                          >
+                            Удалить
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.managementCard}>
+                  <h3>Редакторы</h3>
+                  <div className={styles.managementInputRow}>
+                    <input
+                      type="text"
+                      value={editorIdInput}
+                      onChange={event => setEditorIdInput(event.target.value)}
+                      placeholder="UUID редактора"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddEditor}
+                      disabled={peopleLoading}
+                    >
+                      Добавить
+                    </button>
+                  </div>
+                  <div className={styles.managementList}>
+                    {(course?.editors ?? []).map(editor => (
+                      <div key={editor.id} className={styles.managementItem}>
+                        <div>
+                          <strong>{editor.fullName}</strong>
+                          <span>{editor.email}</span>
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.inlineDanger}
+                          onClick={() => handleRemoveEditor(editor.id)}
+                        >
+                          Удалить
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.managementCard}>
+                  <h3>Студенты</h3>
+                  <div className={styles.managementList}>
+                    {courseStudents.map(enrollment => (
+                      <div key={enrollment.id} className={styles.managementItem}>
+                        <div>
+                          <strong>{enrollment.user.fullName}</strong>
+                          <span>{enrollment.user.email}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.managementCard}>
+                  <h3>Все участники</h3>
+                  <div className={styles.managementList}>
+                    {courseMembers.map(enrollment => (
+                      <div key={enrollment.id} className={styles.managementItem}>
+                        <div>
+                          <strong>{enrollment.user.fullName}</strong>
+                          <span>{enrollment.user.role}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {canManageLessons && (
             <div className={styles.blockCard}>

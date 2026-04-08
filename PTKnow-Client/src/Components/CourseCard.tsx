@@ -29,6 +29,7 @@ const CourseCardComponent: React.FC<CourseCardProps> = ({
   const isEnrolled = useMemo(() => enrolledCourseIds?.has(id) ?? false, [enrolledCourseIds, id]);
   const normalizedRole = normalizeRole(user?.role);
   const shouldSkipEnroll =
+    !user ||
     normalizedRole === 'ADMIN' ||
     normalizedRole === 'TEACHER' ||
     (normalizedRole === 'STUDENT' && isEnrolled);

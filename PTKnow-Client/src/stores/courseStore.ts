@@ -7,7 +7,7 @@ interface CourseState {
   loading: boolean;
   error: string | null;
   forbidden: boolean;
-  fetchCourse: (id: number) => Promise<void>;
+  fetchCourse: (id: number, force?: boolean) => Promise<void>;
   clearCourse: () => void;
 }
 
@@ -17,9 +17,9 @@ export const useCourseStore = create<CourseState>((set, get) => ({
   error: null,
   forbidden: false,
 
-  fetchCourse: async (id: number) => {
+  fetchCourse: async (id: number, force = false) => {
     const { course } = get();
-    if (course?.id === id) return;
+    if (!force && course?.id === id) return;
 
     set({ loading: true, error: null, forbidden: false });
     try {

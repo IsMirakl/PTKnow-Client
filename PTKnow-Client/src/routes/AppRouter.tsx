@@ -10,24 +10,31 @@ import AuthPage from '../Pages/AuthPage';
 import CoursesPage from '../Pages/CoursesPage';
 import CreateCoursePage from '../Pages/CreateCoursePage';
 import CreateLessonPage from '../Pages/CreateLessonPage';
+import HomePage from '../Pages/HomePage';
 import { ProfilePage } from '../Pages/ProfilePage';
 import RegisterPage from '../Pages/RegisterPage';
 import GuestRoute from './GuestRoute';
 import CourseDetailsPage from '../Pages/CourseDetailsPage';
 import ProfileEditPage from '../Pages/ProfileEditPage';
-import ProtectedRoute from './ProtectedRoute';
+import RequiredAuth from './RequiredAuth';
+import RequiredRole from './RequiredRole';
 import AdminUsersPage from '../Pages/AdminUsersPage';
 import AdminPanelPage from '../Pages/AdminPanelPage';
 import UnderConstructionPage from '../Pages/UnderConstructionPage';
 import CourseRegisterPage from '../Pages/CourseRegisterPage';
 import MyCoursesPage from '../Pages/MyCoursesPage';
+import ProfileSearchPage from '../Pages/ProfileSearchPage';
+import CommandPalette from '../Components/CommandPalette';
+import CommandPaletteHint from '../Components/CommandPaletteHint';
 
 const AppRouter: React.FC = () => {
   return (
     <Router>
+      <CommandPalette />
+      <CommandPaletteHint />
       <Routes>
         <Route path="/" element={<Navigate to="/home" replace />} />
-        <Route path="/home" element={<CoursesPage />} />
+        <Route path="/home" element={<HomePage />} />
         <Route path="/courses" element={<CoursesPage />} />
         <Route
           path="/auth"
@@ -50,55 +57,86 @@ const AppRouter: React.FC = () => {
         <Route
           path="/profile"
           element={
-            // <ProtectedRoute>
-            <ProfilePage />
-            // </ProtectedRoute>
+            <RequiredAuth>
+              <ProfilePage />
+            </RequiredAuth>
           }
         />
 
         <Route path="/profile/:handle" element={<ProfilePage />} />
+        <Route path="/profiles" element={<ProfileSearchPage />} />
 
-        <Route path="/profile/edit" element={<ProfileEditPage />} />
+        <Route
+          path="/profile/edit"
+          element={
+            <RequiredAuth>
+              <ProfileEditPage />
+            </RequiredAuth>
+          }
+        />
 
         <Route
           path="/create-course"
           element={
-            // <ProtectedRoute requiredRole={["Teacher", "admin"]}>
-            <CreateCoursePage />
-            // {/* </ProtectedRoute> */}
+            <RequiredRole roles={['TEACHER', 'ADMIN']}>
+              <CreateCoursePage />
+            </RequiredRole>
           }
         />
 
         <Route
           path="/admin"
           element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <RequiredRole roles="ADMIN">
               <AdminPanelPage />
-            </ProtectedRoute>
+            </RequiredRole>
           }
         />
 
         <Route
           path="/admin/users"
           element={
-            <ProtectedRoute requiredRole="ADMIN">
+            <RequiredRole roles="ADMIN">
               <AdminUsersPage />
-            </ProtectedRoute>
+            </RequiredRole>
           }
         />
 
         <Route
           path="/courses/:courseId/lessons/new"
           element={
-            // <ProtectedRoute requiredRole={["Teacher", "admin"]}>
-            <CreateLessonPage />
-            // {/* </ProtectedRoute> */}
+            <RequiredRole roles={['TEACHER', 'ADMIN']}>
+              <CreateLessonPage />
+            </RequiredRole>
           }
         />
 
-        <Route path="/my-courses" element={<MyCoursesPage />} />
+        <Route
+          path="/courses/:courseId/lessons/:lessonId/edit"
+          element={
+            <RequiredRole roles={['TEACHER', 'ADMIN']}>
+              <CreateLessonPage />
+            </RequiredRole>
+          }
+        />
 
-        <Route path="/course/:courseId/register" element={<CourseRegisterPage />} />
+        <Route
+          path="/my-courses"
+          element={
+            <RequiredAuth>
+              <MyCoursesPage />
+            </RequiredAuth>
+          }
+        />
+
+        <Route
+          path="/course/:courseId/register"
+          element={
+            <RequiredRole roles={['GUEST', 'STUDENT']}>
+              <CourseRegisterPage />
+            </RequiredRole>
+          }
+        />
 
         <Route path="/course/:courseId" element={<CourseDetailsPage />} />
 

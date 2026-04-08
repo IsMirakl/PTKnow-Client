@@ -25,9 +25,7 @@ const ProfileHeaderComponent = ({
   const avatarUrl = getAvatarUrl(profile) || DefaultAvatar;
   const statusLabel = profile.status?.toString().trim() ?? '';
   const roleLabel = profile.role?.trim() ?? '';
-  const courseLabel = profile.course ? `${profile.course} курс` : '';
-  const groupLabel = profile.numberGroup ? `Группа ${profile.numberGroup}` : '';
-  const hasCourseGroup = Boolean(courseLabel || groupLabel);
+
   return (
     <div className={styles.profileHeader}>
       <img
@@ -46,17 +44,6 @@ const ProfileHeaderComponent = ({
         )}
 
         {roleLabel && <div className={styles.profileRole}>{roleLabel}</div>}
-
-        {hasCourseGroup && (
-          <div className={styles.profileCourseGroup}>
-            {courseLabel && (
-              <div className={styles.profileCourse}>{courseLabel}</div>
-            )}
-            {groupLabel && (
-              <div className={styles.profileNumberGroup}>{groupLabel}</div>
-            )}
-          </div>
-        )}
       </div>
 
       {isMyProfile && (

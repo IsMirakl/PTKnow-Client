@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 import App from './App.tsx';
+import { AuthProvider } from './hooks/useAuth.ts';
 
 import { setupAuthInterceptor } from './api';
 
@@ -16,10 +17,14 @@ createRoot(document.getElementById('root')!).render(
         reCaptchaKey={recaptchaKey}
         scriptProps={{ async: true, defer: true, appendTo: 'head' }}
       >
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </GoogleReCaptchaProvider>
     ) : (
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     )}
   </StrictMode>
 );

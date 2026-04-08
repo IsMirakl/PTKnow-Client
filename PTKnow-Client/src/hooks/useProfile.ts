@@ -4,6 +4,7 @@ import { profileApi } from '../api';
 
 export const useProfile = () => {
   const [profile, setProfile] = useState<ProfileResponseDTO | null>();
+  const [profiles, setProfiles] = useState<ProfileResponseDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>();
   const [notFound, setNotFound] = useState(false);
@@ -107,9 +108,9 @@ export const useProfile = () => {
     setError(null);
 
     try {
-      const updateProfile = await profileApi.updateProfile(data);
-      setProfile(prev => (prev ? { ...prev, ...updateProfile } : null));
-      return updateProfile;
+      const updatedProfile = await profileApi.updateProfile(data);
+      setProfile(prev => (prev ? { ...prev, ...updatedProfile } : null));
+      return updatedProfile;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Ошибка обновления профиля';
@@ -119,10 +120,46 @@ export const useProfile = () => {
     }
   }, []);
 
+  const replaceProfile = useCallback(async (data: ProfileUpdateDTO) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const updatedProfile = await profileApi.replaceProfile(data);
+      setProfile(updatedProfile);
+      return updatedProfile;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Ошибка обновления профиля';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const searchProfiles = useCallback(async (query: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await profileApi.searchProfiles(query.trim() || undefined);
+      setProfiles(data);
+      return data;
+    } catch (err) {
+      const message = getErrorMessage(err, 'Ошибка поиска профилей');
+      setError(message);
+      setProfiles([]);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const clearError = useCallback(() => setError(null), []);
 
   return {
     profile,
+    profiles,
     loading,
     error,
     notFound,
@@ -130,6 +167,8 @@ export const useProfile = () => {
     getProfileByHandle,
     updateAvatar,
     updateProfile,
+    replaceProfile,
+    searchProfiles,
     clearError,
   };
 };

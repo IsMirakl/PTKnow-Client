@@ -1,0 +1,113 @@
+.page {
+  min-height: calc(100vh - 160px);
+  padding: 2.5rem 0 4rem;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.hero {
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 0.5rem 0 0;
+  color: #5b6472;
+}
+
+.searchForm {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.searchInput {
+  flex: 1;
+  border: 1px solid #d6dce5;
+  border-radius: 16px;
+  padding: 0.95rem 1rem;
+  font-size: 1rem;
+}
+
+.searchButton {
+  border: none;
+  border-radius: 16px;
+  padding: 0 1.5rem;
+  background: #0956c2;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.stateMessage {
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  background: #f5f7fb;
+  color: #445066;
+}
+
+.results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.card {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem;
+  border-radius: 20px;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 10px 30px rgba(9, 86, 194, 0.08);
+}
+
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.cardBody {
+  min-width: 0;
+}
+
+.name {
+  font-weight: 700;
+}
+
+.handle {
+  margin-top: 0.25rem;
+  color: #0956c2;
+}
+
+.summary {
+  margin-top: 0.5rem;
+  color: #5b6472;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 640px) {
+  .searchForm {
+    flex-direction: column;
+  }
+
+  .searchButton {
+    height: 48px;
+  }
+}

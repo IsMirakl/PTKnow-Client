@@ -9,7 +9,7 @@ export interface CourseSummaryDTO {
 }
 
 export interface FileMetaDTO {
-  id: number;
+  id: string;
   originalFilename: string;
   contentType: string;
   size: number;

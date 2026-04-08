@@ -29,7 +29,10 @@ img{
 }
 
 body{
-    background-color: #EDF1F8;
+    background:
+        radial-gradient(circle at top right, rgba(9, 86, 194, 0.08), transparent 28rem),
+        linear-gradient(180deg, #f8fbff 0%, #ffffff 45%, #f3f7ff 100%);
+    color: #102a56;
 }
 
 
@@ -37,6 +40,7 @@ body{
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    background: transparent;
 }
 
 .main-content {

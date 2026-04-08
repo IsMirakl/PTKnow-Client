@@ -1,0 +1,105 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(10, 23, 46, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.modal {
+  position: relative;
+  width: min(28rem, 100%);
+  padding: 2rem 1.5rem 1.5rem;
+  border-radius: 1.6rem;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 1.75rem 4rem rgba(10, 41, 93, 0.24);
+  border: 1px solid rgba(201, 54, 54, 0.14);
+  text-align: center;
+}
+
+.closeButton {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #f6f8fc;
+  color: #70809a;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.closeButton:hover {
+  background: #edf2f8;
+  color: #42536f;
+}
+
+.iconWrap {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff0f0 0%, #ffe0e0 100%);
+}
+
+.icon {
+  color: #c93636;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.title {
+  margin: 0 0 0.6rem;
+  color: #102a56;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.message {
+  margin: 0;
+  color: #5f6f8c;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+.actionButton {
+  min-width: 9rem;
+  height: 3rem;
+  margin-top: 1.5rem;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  background: #0956c2;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.96rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.actionButton:hover {
+  background: #0a63de;
+}
+
+@media (max-width: 480px) {
+  .modal {
+    padding: 1.75rem 1.1rem 1.25rem;
+    border-radius: 1.35rem;
+  }
+}

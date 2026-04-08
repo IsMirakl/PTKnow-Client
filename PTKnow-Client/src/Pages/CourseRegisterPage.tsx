@@ -1,25 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import Header from '../Components/Header';
-import Footer from '../Components/Footer';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
+
 import { courseCardApi } from '../api';
+import Footer from '../Components/Footer';
+import Header from '../Components/Header';
+import { FormAlert } from '../Components/ui/forms/FormAlert';
 import { useAuth } from '../hooks/useAuth';
 import { useMyEnrollments } from '../hooks/useMyEnrollments';
-import { normalizeRole } from '../utils/roleUtils';
-import { FormAlert } from '../Components/ui/forms/FormAlert';
 import styles from '../styles/pages/CourseRegisterPage.module.css';
+import { normalizeRole } from '../utils/roleUtils';
 
 const CourseRegisterPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const parsedCourseId = courseId ? Number(courseId) : null;
-  const resolvedCourseId = Number.isFinite(parsedCourseId)
-    ? parsedCourseId
-    : null;
+  const resolvedCourseId = Number.isFinite(parsedCourseId) ? parsedCourseId : null;
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { enrolledCourses, loading: enrollmentsLoading } = useMyEnrollments();
+
   const isAlreadyEnrolled = useMemo(
     () =>
       !!resolvedCourseId &&
@@ -40,20 +40,22 @@ const CourseRegisterPage: React.FC = () => {
       navigate(`/course/${resolvedCourseId}`, { replace: true });
     }
   }, [
+    enrollmentsLoading,
+    isAlreadyEnrolled,
+    navigate,
+    normalizedRole,
     resolvedCourseId,
     user,
-    normalizedRole,
-    isAlreadyEnrolled,
-    enrollmentsLoading,
-    navigate,
   ]);
 
   const handleEnroll = useCallback(async () => {
     if (!resolvedCourseId || isSubmitting) {
       return;
     }
+
     setIsSubmitting(true);
     setError(null);
+
     try {
       await courseCardApi.enrollInCourse(resolvedCourseId);
       navigate(`/course/${resolvedCourseId}`);
@@ -64,7 +66,7 @@ const CourseRegisterPage: React.FC = () => {
         };
         const status = response.response?.status;
         if (status === 401) {
-          navigate('/auth');
+          navigate('/home', { replace: true });
           return;
         }
         const data = response.response?.data;
@@ -82,6 +84,7 @@ const CourseRegisterPage: React.FC = () => {
           return;
         }
       }
+
       setError('Не удалось записаться на курс. Попробуйте позже.');
     } finally {
       setIsSubmitting(false);
@@ -89,7 +92,7 @@ const CourseRegisterPage: React.FC = () => {
   }, [isSubmitting, navigate, resolvedCourseId]);
 
   if (!resolvedCourseId) {
-    return <div>Некорректный идентификатор курса.</div>;
+    return <Navigate to="/home" replace />;
   }
 
   return (
