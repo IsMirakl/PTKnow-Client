@@ -7,7 +7,8 @@ import { useAuth } from '../hooks/useAuth';
 import { normalizeRole } from '../utils/roleUtils';
 import { AuthImage } from './AuthImage';
 
-type CourseCardData = Pick<CourseDTO, 'id' | 'name' | 'previewUrl'> & {
+type CourseCardData = Pick<CourseDTO, 'id' | 'name'> & {
+  previewUrl?: string | null;
   tags?: string[];
   description?: string;
 };

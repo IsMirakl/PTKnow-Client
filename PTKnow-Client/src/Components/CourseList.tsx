@@ -9,7 +9,7 @@ interface CourseListProps {
   courses?: Array<{
     id: number;
     name: string;
-    previewUrl?: string;
+    previewUrl?: string | null;
     tags?: string[];
     description?: string;
   }>;

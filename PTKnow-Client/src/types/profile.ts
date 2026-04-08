@@ -20,5 +20,5 @@ export interface ProfileUpdateDTO {
   fullName: string;
   summary: string;
   handle: string;
-  avatarUrl: string;
+  avatarUrl?: string;
 }

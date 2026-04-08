@@ -330,7 +330,7 @@ const CreateLessonPage: React.FC = () => {
 
             {(localError || error || uploadError || uploadMessage) && (
               <FormAlert
-                message={localError || error || uploadError || uploadMessage}
+                message={(localError || error || uploadError || uploadMessage) ?? ''}
                 variant={
                   uploadMessage && !(localError || error || uploadError)
                     ? 'success'

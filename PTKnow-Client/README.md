@@ -1,4 +1,4 @@
-# PTKnow-Client
+﻿# PTKnow-Client
 
 Frontend для PTKnow — информационного портала Политехнического колледжа НовГУ
 с мероприятиями и курсами дополнительного образования.
@@ -173,3 +173,40 @@ chore:    Технические задачи
 ## Лицензия
 
 Apache 2.0
+
+## Docker
+
+Файлы необходимые для сборки проекта:
+
+- `../Dockerfile` - сборка Docker образа
+- `../docker/nginx.conf` - конфиг `nginx` для SPA
+- `../.github/workflows/docker-publish.yml` - CI для сборки и публикации в наш Docker hub
+
+### Локальная сборка образа
+
+```bash
+docker build -t ptknow-client:local \
+  --build-arg VITE_API_BASE_URL=https://api.example.com/api \
+  --build-arg VITE_RECAPTCHA_SITE_KEY=your_site_key \
+  ..
+```
+
+### Локальный запуск
+
+```bash
+docker run --rm -p 8081:80 ptknow-client:local
+```
+
+### GitHub Actions и Docker Hub
+
+Для workflow нужны секреты репозитория:
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+
+И переменные репозитория:
+
+- `VITE_API_BASE_URL`
+- `VITE_RECAPTCHA_SITE_KEY`
+
+Workflow публикует образ `${DOCKERHUB_USERNAME}/site-frontend` при пуше в `main`, по тегам `v*` и при ручном запуске
