@@ -4,6 +4,7 @@ import { profileApi } from '../api/endpoints/profile';
 
 export const useMyEnrollments = () => {
   const [enrolledCourses, setEnrolledCourses] = useState<CourseSummaryDTO[]>([]);
+  const [teachingCourses, setTeachingCourses] = useState<CourseSummaryDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -11,6 +12,7 @@ export const useMyEnrollments = () => {
     const token = localStorage.getItem('accessToken');
     if (!token || token === 'undefined') {
       setEnrolledCourses([]);
+      setTeachingCourses([]);
       setLoading(false);
       return;
     }
@@ -20,11 +22,13 @@ export const useMyEnrollments = () => {
     try {
       const profile = await profileApi.getMyProfile();
       setEnrolledCourses(profile.enrolledCourses ?? []);
+      setTeachingCourses(profile.teachingCourses ?? []);
     } catch (err) {
       if (typeof err === 'object' && err !== null && 'response' in err) {
         const response = err as { response?: { status?: number } };
         if (response.response?.status === 401) {
           setEnrolledCourses([]);
+          setTeachingCourses([]);
           return;
         }
       }
@@ -40,6 +44,7 @@ export const useMyEnrollments = () => {
 
   return {
     enrolledCourses,
+    teachingCourses,
     loading,
     error,
     refetch: fetchEnrollments,

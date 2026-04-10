@@ -26,6 +26,7 @@ import MyCoursesPage from '../Pages/MyCoursesPage';
 import ProfileSearchPage from '../Pages/ProfileSearchPage';
 import CommandPalette from '../Components/CommandPalette';
 import CommandPaletteHint from '../Components/CommandPaletteHint';
+import LessonDetailsPage from '../Pages/LessonDetailsPage';
 
 const AppRouter: React.FC = () => {
   return (
@@ -109,6 +110,11 @@ const AppRouter: React.FC = () => {
               <CreateLessonPage />
             </RequiredRole>
           }
+        />
+
+        <Route
+          path="/courses/:courseId/lessons/:lessonId"
+          element={<LessonDetailsPage />}
         />
 
         <Route

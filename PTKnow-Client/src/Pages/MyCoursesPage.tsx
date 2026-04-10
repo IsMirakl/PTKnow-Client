@@ -14,20 +14,36 @@ import {
 
 const MyCoursesPage: React.FC = () => {
   const { user } = useAuth();
-  const { enrolledCourses, loading, error } = useMyEnrollments();
+  const { enrolledCourses, teachingCourses, loading, error } = useMyEnrollments();
   const continueCourse = useMemo(() => getContinueCourseState(), []);
   const continueTime = formatContinueLessonTime(continueCourse?.lessonBeginAt);
 
-  const enrolledCourseCards = useMemo(
+  const allMyCourses = useMemo(() => {
+    const byId = new Map<number, (typeof enrolledCourses)[number]>();
+
+    enrolledCourses.forEach(course => {
+      byId.set(course.id, course);
+    });
+
+    teachingCourses.forEach(course => {
+      if (!byId.has(course.id)) {
+        byId.set(course.id, course);
+      }
+    });
+
+    return Array.from(byId.values());
+  }, [enrolledCourses, teachingCourses]);
+
+  const courseCards = useMemo(
     () =>
-      enrolledCourses.map(course => ({
+      allMyCourses.map(course => ({
         id: course.id,
         name: course.name,
         previewUrl: course.previewUrl,
         tags: [],
         description: '',
       })),
-    [enrolledCourses]
+    [allMyCourses]
   );
 
   const enrolledCourseIds = useMemo(
@@ -48,15 +64,18 @@ const MyCoursesPage: React.FC = () => {
             <p className={styles.heroLabel}>Личный кабинет</p>
             <h1 className={styles.heroTitle}>Мои курсы</h1>
             <p className={styles.heroDescription}>
-              Здесь собраны все курсы, на которые вы уже записаны и к которым
-              можно быстро вернуться
+              Здесь собраны и курсы, на которые вы записаны, и курсы, которые вы ведете
             </p>
           </div>
 
           <div className={styles.heroStats}>
             <div className={styles.statCard}>
               <span className={styles.statValue}>{enrolledCourses.length}</span>
-              <span className={styles.statLabel}>активных записей</span>
+              <span className={styles.statLabel}>записей на курсы</span>
+            </div>
+            <div className={styles.statCard}>
+              <span className={styles.statValue}>{teachingCourses.length}</span>
+              <span className={styles.statLabel}>курсов в ведении</span>
             </div>
           </div>
         </section>
@@ -89,12 +108,12 @@ const MyCoursesPage: React.FC = () => {
         <section className={styles.catalogSection}>
           <CourseList
             showLoadMore={false}
-            courses={enrolledCourseCards}
+            courses={courseCards}
             isLoading={loading}
             error={error}
             enrolledCourseIds={enrolledCourseIds}
-            emptyTitle="Вы пока не записаны ни на один курс"
-            emptyDescription="Когда выберете интересный курс в каталоге, он появится здесь"
+            emptyTitle="У вас пока нет ни записей, ни курсов в ведении"
+            emptyDescription="Когда вы запишетесь на курс или начнете вести свой, он появится здесь"
           />
         </section>
       </main>

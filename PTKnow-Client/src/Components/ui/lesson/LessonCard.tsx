@@ -1,11 +1,13 @@
 import { memo, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+
+import { filesAPI } from '../../../api/endpoints/file';
+import { useLesson } from '../../../hooks/useLessons';
 import { useLessonStore } from '../../../stores/scheduleStore';
-import styles from '../../../styles/components/LessonCard.module.css';
 import type { LessonDTO } from '../../../types/lesson';
 import { formatFullDate, formatTime } from '../../../utils/dateUtils';
-import { filesAPI } from '../../../api/endpoints/file';
-import ReactMarkdown from 'react-markdown';
-import { useLesson } from '../../../hooks/useLessons';
+import styles from '../../../styles/components/LessonCard.module.css';
 
 interface Props {
   lesson: LessonDTO;
@@ -15,6 +17,7 @@ interface Props {
 const LessonCardComponent = ({ lesson, canManageLessons = false }: Props) => {
   const { selectedDate } = useLessonStore();
   const { deleteLesson } = useLesson();
+  const navigate = useNavigate();
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [markdownText, setMarkdownText] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -103,38 +106,61 @@ const LessonCardComponent = ({ lesson, canManageLessons = false }: Props) => {
 
       <div className={styles.card}>
         <div className={styles.left}>
+          <div className={styles.topRow}>
+            <span className={styles.typeBadge}>{lesson.type}</span>
+            <span className={styles.stateBadge}>{lesson.state}</span>
+          </div>
           <h3 className={styles.title}>{lesson.name}</h3>
           <p className={styles.description}>{lesson.description}</p>
+          <Link
+            to={`/courses/${lesson.courseId}/lessons/${lesson.id}`}
+            className={styles.openLink}
+          >
+            Открыть страницу урока
+          </Link>
         </div>
 
         <div className={styles.metaColumn}>
           <div className={styles.time}>
             {formatTime(begin)}-{formatTime(end)}
           </div>
-          {hasMarkdownPreview && (
-            <button
-              type="button"
-              className={styles.previewButton}
-              onClick={handlePreviewToggle}
-              disabled={previewLoading}
-            >
-              {previewLoading
-                ? 'Загрузка...'
-                : isPreviewOpen
-                  ? 'Скрыть'
-                  : 'Просмотр'}
-            </button>
-          )}
-          {canManageLessons && (
-            <button
-              type="button"
-              className={styles.deleteButton}
-              onClick={handleDelete}
-              disabled={deleteLoading}
-            >
-              {deleteLoading ? 'Удаление...' : 'Удалить'}
-            </button>
-          )}
+          <div className={styles.actions}>
+            {hasMarkdownPreview && (
+              <button
+                type="button"
+                className={styles.previewButton}
+                onClick={handlePreviewToggle}
+                disabled={previewLoading}
+              >
+                {previewLoading
+                  ? 'Загрузка...'
+                  : isPreviewOpen
+                    ? 'Скрыть'
+                    : 'Быстрый просмотр'}
+              </button>
+            )}
+            {canManageLessons && (
+              <>
+                <button
+                  type="button"
+                  className={styles.editButton}
+                  onClick={() =>
+                    navigate(`/courses/${lesson.courseId}/lessons/${lesson.id}/edit`)
+                  }
+                >
+                  Редактировать
+                </button>
+                <button
+                  type="button"
+                  className={styles.deleteButton}
+                  onClick={handleDelete}
+                  disabled={deleteLoading}
+                >
+                  {deleteLoading ? 'Удаление...' : 'Удалить'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
       {isPreviewOpen && hasMarkdownPreview && (

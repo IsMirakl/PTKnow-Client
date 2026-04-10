@@ -1,10 +1,12 @@
 import { memo, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import styles from '../styles/components/Card.module.css';
-import type { CourseDTO } from '../types/CourseCard';
+
 import defaultImg from '../assets/image/2.jpg';
 import { useAuth } from '../hooks/useAuth';
+import styles from '../styles/components/Card.module.css';
+import type { CourseDTO } from '../types/CourseCard';
 import { normalizeRole } from '../utils/roleUtils';
+import { getFileUrl } from '../utils/fileUtils';
 import { AuthImage } from './AuthImage';
 
 type CourseCardData = Pick<CourseDTO, 'id' | 'name'> & {
@@ -26,10 +28,18 @@ const CourseCardComponent: React.FC<CourseCardProps> = ({
   enrolledCourseIds,
 }) => {
   const { user } = useAuth();
-  const isEnrolled = useMemo(() => enrolledCourseIds?.has(id) ?? false, [enrolledCourseIds, id]);
+  const isGuest = !user;
+  const isEnrolled = useMemo(
+    () => enrolledCourseIds?.has(id) ?? false,
+    [enrolledCourseIds, id]
+  );
   const normalizedRole = normalizeRole(user?.role);
+  const resolvedPreviewUrl = useMemo(
+    () => getFileUrl(previewUrl ?? undefined),
+    [previewUrl]
+  );
   const shouldSkipEnroll =
-    !user ||
+    isGuest ||
     normalizedRole === 'ADMIN' ||
     normalizedRole === 'TEACHER' ||
     (normalizedRole === 'STUDENT' && isEnrolled);
@@ -41,7 +51,7 @@ const CourseCardComponent: React.FC<CourseCardProps> = ({
     <div className={styles.cardContainer}>
       <div className={styles.imageContainer}>
         <AuthImage
-          src={previewUrl}
+          src={resolvedPreviewUrl}
           fallbackSrc={defaultImg}
           alt={name}
           className={styles.cardImage}
@@ -66,7 +76,7 @@ const CourseCardComponent: React.FC<CourseCardProps> = ({
 
       <div className={styles.buttonContainer}>
         <Link to={detailsLink} className={styles.cardButton}>
-          Подробнее
+          {isGuest ? 'Необходимо зарегистрироваться' : 'Подробнее'}
         </Link>
       </div>
     </div>

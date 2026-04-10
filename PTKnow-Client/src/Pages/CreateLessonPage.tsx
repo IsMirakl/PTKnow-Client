@@ -4,11 +4,27 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import Footer from '../Components/Footer';
 import Header from '../Components/Header';
 import { FormAlert } from '../Components/ui/forms/FormAlert';
+import { ErrorModal } from '../Components/ui/forms/ErrorModal';
 import { useAuth } from '../hooks/useAuth';
 import { useLesson } from '../hooks/useLessons';
 import { useCourseStore } from '../stores/courseStore';
 import type { FileMetaDTO } from '../types/CourseCard';
 import styles from '../styles/pages/CreateLessonPage.module.css';
+
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+
+const LESSON_TYPE_OPTIONS = [
+  { value: 'LECTURE', label: 'Лекция' },
+  { value: 'PRACTICE', label: 'Практика' },
+];
+
+const formatFileSize = (size: number) => {
+  if (size >= 1024 * 1024) {
+    return `${(size / (1024 * 1024)).toFixed(1)} МБ`;
+  }
+
+  return `${Math.max(1, Math.round(size / 1024))} КБ`;
+};
 
 const CreateLessonPage: React.FC = () => {
   const { courseId: courseIdParam, lessonId: lessonIdParam } = useParams<{
@@ -37,19 +53,19 @@ const CreateLessonPage: React.FC = () => {
     error: courseError,
   } = useCourseStore();
   const navigate = useNavigate();
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [contentMd, setContentMd] = useState('');
   const [beginAt, setBeginAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
-  const [type, setType] = useState('');
-  const [mdFile, setMdFile] = useState<File | null>(null);
-  const [uploadedMaterial, setUploadedMaterial] = useState<FileMetaDTO | null>(
-    null
-  );
+  const [type, setType] = useState('LECTURE');
+  const [materialFiles, setMaterialFiles] = useState<File[]>([]);
+  const [uploadedMaterials, setUploadedMaterials] = useState<FileMetaDTO[]>([]);
   const [localError, setLocalError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [sizeModalMessage, setSizeModalMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (courseId) {
@@ -75,7 +91,8 @@ const CreateLessonPage: React.FC = () => {
     setContentMd(lesson.contentMd ?? '');
     setBeginAt(lesson.beginAt ? lesson.beginAt.slice(0, 16) : '');
     setEndsAt(lesson.endsAt ? lesson.endsAt.slice(0, 16) : '');
-    setType(lesson.type ?? '');
+    setType(lesson.type ?? 'LECTURE');
+    setUploadedMaterials(lesson.materials ?? []);
   }, [lesson, lessonId]);
 
   const isEditMode = Boolean(lessonId);
@@ -83,7 +100,9 @@ const CreateLessonPage: React.FC = () => {
   const canManageLessons = useMemo(() => {
     if (!user || !course) return false;
     const normalizedRole = user.role?.toUpperCase() ?? '';
-    return normalizedRole === 'ADMIN' || user.id === course.owner?.id;
+    const isOwner = user.id === course.owner?.id;
+    const isEditor = (course.editors ?? []).some(editor => editor.id === user.id);
+    return normalizedRole === 'ADMIN' || normalizedRole === 'TEACHER' || isOwner || isEditor;
   }, [course, user]);
 
   const isFormDisabled =
@@ -125,23 +144,59 @@ const CreateLessonPage: React.FC = () => {
     }
   };
 
-  const handleMdFileChange = (file: File | null) => {
-    setUploadedMaterial(null);
-    setUploadMessage(null);
-    setUploadError(null);
-    setMdFile(null);
+  const closeSizeModal = () => {
+    setSizeModalMessage(null);
+  };
 
-    if (!file) {
+  const handleMaterialFilesChange = (files: FileList | null) => {
+    resetErrors();
+
+    if (!files || files.length === 0) {
       return;
     }
 
-    const fileName = file.name.toLowerCase();
-    if (!fileName.endsWith('.md') && !fileName.endsWith('.markdown')) {
-      setUploadError('Можно загружать только файлы .md или .markdown.');
+    const nextFiles = Array.from(files);
+    const oversizedFiles = nextFiles.filter(file => file.size > MAX_FILE_SIZE_BYTES);
+
+    if (oversizedFiles.length > 0) {
+      const names = oversizedFiles.map(file => `«${file.name}»`).join(', ');
+      setSizeModalMessage(
+        `Файлы ${names} превышают лимит 10 МБ. Уменьшите размер или выберите другие материалы.`
+      );
       return;
     }
 
-    setMdFile(file);
+    setMaterialFiles(prev => {
+      const merged = [...prev];
+
+      nextFiles.forEach(file => {
+        const alreadyExists = merged.some(
+          existing =>
+            existing.name === file.name &&
+            existing.size === file.size &&
+            existing.lastModified === file.lastModified
+        );
+
+        if (!alreadyExists) {
+          merged.push(file);
+        }
+      });
+
+      return merged;
+    });
+  };
+
+  const removePendingFile = (targetFile: File) => {
+    setMaterialFiles(prev =>
+      prev.filter(
+        file =>
+          !(
+            file.name === targetFile.name &&
+            file.size === targetFile.size &&
+            file.lastModified === targetFile.lastModified
+          )
+      )
+    );
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -163,13 +218,7 @@ const CreateLessonPage: React.FC = () => {
       return;
     }
 
-    if (
-      !name.trim() ||
-      !description.trim() ||
-      !beginAt ||
-      !endsAt ||
-      !type.trim()
-    ) {
+    if (!name.trim() || !description.trim() || !beginAt || !endsAt || !type.trim()) {
       setLocalError('Заполните все обязательные поля.');
       return;
     }
@@ -198,69 +247,77 @@ const CreateLessonPage: React.FC = () => {
           ? await replaceLesson(lessonId, payload)
           : await createLesson(courseId, payload);
 
-      if (mdFile) {
+      if (materialFiles.length > 0) {
         try {
-          const uploaded = await addLessonMaterial(savedLesson.id, mdFile);
-          setUploadedMaterial(uploaded);
-          setUploadMessage('Материал успешно добавлен к уроку.');
+          const uploaded = await Promise.all(
+            materialFiles.map(file => addLessonMaterial(savedLesson.id, file))
+          );
+          setUploadedMaterials(prev => [...prev, ...uploaded]);
+          setMaterialFiles([]);
+          setUploadMessage(
+            uploaded.length === 1
+              ? 'Материал успешно добавлен к уроку.'
+              : `Материалы успешно добавлены: ${uploaded.length}`
+          );
         } catch (materialError) {
           const message =
             materialError instanceof Error
               ? materialError.message
-              : 'Не удалось загрузить материал.';
+              : 'Не удалось загрузить материалы урока.';
           setUploadError(message);
+          return;
         }
       }
 
-      if (isEditMode) {
-        navigate(`/course/${courseId}`);
-        return;
-      }
-
-      setName('');
-      setDescription('');
-      setContentMd('');
-      setBeginAt('');
-      setEndsAt('');
-      setType('');
-      setMdFile(null);
+      navigate(`/courses/${courseId}/lessons/${savedLesson.id}`);
     } catch (submitError) {
       console.error('Error saving lesson:', submitError);
     }
   };
+
+  const activeMessage =
+    (localError || error || uploadError || uploadMessage) ?? null;
 
   return (
     <>
       <Header />
       <main className={styles.page}>
         <div className={styles.container}>
-          <div className={styles.header}>
-            <div>
-              <h1>{isEditMode ? 'Редактирование урока' : 'Создание урока'}</h1>
-              <p>
-                {isEditMode
-                  ? 'Обновите содержание, расписание и материалы урока.'
-                  : 'Добавьте структуру, расписание и материалы урока.'}
+          <section className={styles.hero}>
+            <div className={styles.heroMain}>
+              <div className={styles.heroBadges}>
+                <span className={styles.badge}>Урок</span>
+                <span className={styles.badgeSecondary}>
+                  {isEditMode ? 'Редактирование' : 'Создание'}
+                </span>
+                {course?.handle && (
+                  <span className={styles.badgeGhost}>@{course.handle}</span>
+                )}
+              </div>
+              <h1 className={styles.title}>
+                {isEditMode ? 'Настройте урок' : 'Создайте сильный урок'}
+              </h1>
+              <p className={styles.subtitle}>
+                Соберите тему, формат, расписание и материалы в одной форме, чтобы
+                урок сразу выглядел цельным и готовым к публикации
               </p>
             </div>
-            <div className={styles.badges}>
-              <span className={styles.badge}>Урок</span>
-              {course?.handle && (
-                <span className={styles.badgeSecondary}>@{course.handle}</span>
-              )}
-            </div>
-          </div>
+
+            <aside className={styles.heroAside}>
+              <div className={styles.statCard}>
+                <span className={styles.statLabel}>Курс</span>
+                <strong>{course?.name ?? '—'}</strong>
+              </div>
+              <div className={styles.statCard}>
+                <span className={styles.statLabel}>Режим</span>
+                <strong>{isEditMode ? 'Обновление урока' : 'Новый урок'}</strong>
+              </div>
+            </aside>
+          </section>
 
           <div className={styles.noticeStack}>
-            {!courseId && (
-              <div className={styles.notice}>
-                Добавьте идентификатор курса в URL, чтобы продолжить.
-              </div>
-            )}
             {courseError && (
-              <div className={styles.notice}>
-                Ошибка загрузки курса: {courseError}
-              </div>
+              <div className={styles.notice}>Ошибка загрузки курса: {courseError}</div>
             )}
             {!authLoading && !user && (
               <div className={styles.notice}>
@@ -282,21 +339,49 @@ const CreateLessonPage: React.FC = () => {
           </div>
 
           <form className={styles.form} onSubmit={handleSubmit}>
-            <div className={styles.section}>
-              <label className={styles.field}>
-                <span>Название урока</span>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={event => {
-                    resetErrors();
-                    setName(event.target.value);
-                  }}
-                  placeholder="Введите название"
-                  disabled={isFormDisabled}
-                  required
-                />
-              </label>
+            <section className={styles.card}>
+              <div className={styles.cardHeader}>
+                <div>
+                  <h2>Основа урока</h2>
+                  <p>Название, формат и короткое описание того, что получит студент</p>
+                </div>
+              </div>
+
+              <div className={styles.gridTwo}>
+                <label className={styles.field}>
+                  <span>Название урока</span>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={event => {
+                      resetErrors();
+                      setName(event.target.value);
+                    }}
+                    placeholder="Например: Введение в типографику интерфейсов"
+                    disabled={isFormDisabled}
+                    required
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Тип занятия</span>
+                  <select
+                    value={type}
+                    onChange={event => {
+                      resetErrors();
+                      setType(event.target.value);
+                    }}
+                    disabled={isFormDisabled}
+                    required
+                  >
+                    {LESSON_TYPE_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
 
               <label className={styles.field}>
                 <span>Описание</span>
@@ -306,52 +391,120 @@ const CreateLessonPage: React.FC = () => {
                     resetErrors();
                     setDescription(event.target.value);
                   }}
-                  placeholder="Коротко опишите урок"
+                  placeholder="Кратко опишите цель урока, фокус и ожидаемый результат"
                   disabled={isFormDisabled}
                   required
                 />
               </label>
-            </div>
+            </section>
 
-            <div className={styles.section}>
+            <section className={styles.card}>
+              <div className={styles.cardHeader}>
+                <div>
+                  <h2>Содержание</h2>
+                  <p>Текст урока в Markdown и дополнительные материалы для скачивания</p>
+                </div>
+              </div>
+
               <label className={styles.field}>
-                <span>Содержание (Markdown)</span>
+                <span>Содержание урока (Markdown)</span>
                 <textarea
                   value={contentMd}
                   onChange={event => {
                     resetErrors();
                     setContentMd(event.target.value);
                   }}
-                  placeholder="Добавьте материал урока"
+                  placeholder={'# План урока\n\nОпишите ключевые тезисы, задания и ссылки'}
                   disabled={isFormDisabled}
+                  className={styles.markdownField}
                 />
               </label>
 
-              <label className={styles.field}>
-                <span>Файл материала (.md)</span>
-                <input
-                  type="file"
-                  accept=".md,.markdown,text/markdown"
-                  onChange={event => {
-                    resetErrors();
-                    const file = event.target.files?.[0] ?? null;
-                    handleMdFileChange(file);
-                  }}
-                  disabled={isFormDisabled}
-                />
-                {mdFile && (
-                  <span className={styles.helper}>Выбран: {mdFile.name}</span>
-                )}
-                {uploadedMaterial && (
-                  <span className={styles.helper}>
-                    Загружен: {uploadedMaterial.originalFilename}
-                  </span>
-                )}
-              </label>
-            </div>
+              <div className={styles.uploadCard}>
+                <div className={styles.uploadIntro}>
+                  <div>
+                    <h3>Материалы урока</h3>
+                    <p>
+                      Загружайте несколько файлов любого типа. Каждый файл не должен
+                      превышать 10 МБ
+                    </p>
+                  </div>
+                  <span className={styles.uploadLimit}>Лимит: 10 МБ на файл</span>
+                </div>
 
-            <div className={styles.section}>
-              <div className={styles.row}>
+                <div className={styles.uploadActions}>
+                  <label className={styles.uploadField}>
+                    <input
+                      type="file"
+                      multiple
+                      onChange={event => {
+                        handleMaterialFilesChange(event.target.files);
+                        event.target.value = '';
+                      }}
+                      disabled={isFormDisabled}
+                    />
+                    <span>Добавить файлы</span>
+                  </label>
+                  <p className={styles.helper}>
+                    Можно выбрать файлы повторно: новые материалы будут аккуратно
+                    добавлены к уже выбранным
+                  </p>
+                </div>
+
+                {materialFiles.length > 0 && (
+                  <div className={styles.filesSection}>
+                    <span className={styles.sectionLabel}>Будут загружены</span>
+                    <div className={styles.fileList}>
+                      {materialFiles.map(file => (
+                        <div
+                          key={`${file.name}-${file.size}-${file.lastModified}`}
+                          className={styles.fileChip}
+                        >
+                          <div className={styles.fileChipBody}>
+                            <strong>{file.name}</strong>
+                            <span>{formatFileSize(file.size)}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className={styles.fileChipRemove}
+                            onClick={() => removePendingFile(file)}
+                            aria-label={`Убрать файл ${file.name}`}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {uploadedMaterials.length > 0 && (
+                  <div className={styles.filesSection}>
+                    <span className={styles.sectionLabel}>Уже прикреплено</span>
+                    <div className={styles.fileList}>
+                      {uploadedMaterials.map(file => (
+                        <div key={file.id} className={styles.fileChip}>
+                          <div className={styles.fileChipBody}>
+                            <strong>{file.originalFilename}</strong>
+                            <span>{formatFileSize(file.size)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section className={styles.card}>
+              <div className={styles.cardHeader}>
+                <div>
+                  <h2>Расписание</h2>
+                  <p>Выберите время начала и окончания, чтобы урок попал в календарь</p>
+                </div>
+              </div>
+
+              <div className={styles.gridTwo}>
                 <label className={styles.field}>
                   <span>Начало</span>
                   <input
@@ -380,26 +533,11 @@ const CreateLessonPage: React.FC = () => {
                   />
                 </label>
               </div>
+            </section>
 
-              <label className={styles.field}>
-                <span>Тип занятия</span>
-                <input
-                  type="text"
-                  value={type}
-                  onChange={event => {
-                    resetErrors();
-                    setType(event.target.value);
-                  }}
-                  placeholder="Например: LECTURE"
-                  disabled={isFormDisabled}
-                  required
-                />
-              </label>
-            </div>
-
-            {(localError || error || uploadError || uploadMessage) && (
+            {activeMessage && (
               <FormAlert
-                message={(localError || error || uploadError || uploadMessage) ?? ''}
+                message={activeMessage}
                 variant={
                   uploadMessage && !(localError || error || uploadError)
                     ? 'success'
@@ -409,7 +547,14 @@ const CreateLessonPage: React.FC = () => {
             )}
 
             <div className={styles.actions}>
-              <button type="submit" disabled={isFormDisabled}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => navigate(`/course/${courseId}`)}
+              >
+                Отмена
+              </button>
+              <button type="submit" className={styles.primaryButton} disabled={isFormDisabled}>
                 {loading
                   ? isEditMode
                     ? 'Сохранение...'
@@ -423,6 +568,13 @@ const CreateLessonPage: React.FC = () => {
         </div>
       </main>
       <Footer />
+
+      <ErrorModal
+        title="Файл слишком большой"
+        message={sizeModalMessage}
+        isOpen={Boolean(sizeModalMessage)}
+        onClose={closeSizeModal}
+      />
     </>
   );
 };

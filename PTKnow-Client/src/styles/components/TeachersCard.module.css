@@ -40,6 +40,15 @@
   font-size: 14px;
 }
 
+.avatarImage {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #e6efff;
+}
+
 .teacherInfo {
   display: flex;
   flex-direction: column;

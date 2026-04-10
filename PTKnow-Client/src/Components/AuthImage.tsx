@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import axios from 'axios';
 import { api } from '../api';
 import { getFileUrl } from '../utils/fileUtils';
 
@@ -50,7 +51,11 @@ export const AuthImage: React.FC<AuthImageProps> = ({
     isFetchingRef.current = true;
 
     try {
-      const response = await api.get(resolvedSrc, { responseType: 'blob' });
+      const response = await axios.get(resolvedSrc, {
+        responseType: 'blob',
+        withCredentials: true,
+        timeout: api.defaults.timeout,
+      });
       revokeObjectUrl();
       objectUrlRef.current = URL.createObjectURL(response.data);
       setDisplaySrc(objectUrlRef.current);

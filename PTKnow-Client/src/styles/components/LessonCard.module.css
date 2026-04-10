@@ -1,136 +1,186 @@
 .container {
-  width: 764px;
-  min-height: 190px;
+  width: 100%;
+}
+
+.date {
+  margin: 0 0 0.7rem;
+  color: #6b7a95;
+  font-size: 0.88rem;
+  font-weight: 700;
 }
 
 .card {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin: 20px 21px 7px 21px;
-
-  background: #1d5bbf;
+  gap: 1.2rem;
+  padding: 1.3rem 1.35rem;
+  border-radius: 1.6rem;
+  background: linear-gradient(135deg, #0f4faa 0%, #1b66d3 100%);
   color: white;
-
-  padding: 28px 32px;
-  border-radius: 28px;
-
-  margin-bottom: 20px;
-}
-
-.date {
-  margin: 0 21px;
-  font-size: 14px;
-  color: #6b7280;
 }
 
 .left {
+  min-width: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.75rem;
+}
+
+.topRow {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.typeBadge,
+.stateBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.typeBadge {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.stateBadge {
+  background: rgba(11, 26, 56, 0.24);
 }
 
 .title {
-  font-size: 24px;
-  font-weight: 600;
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .description {
-  font-size: 16px;
-  opacity: 0.9;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.6;
 }
 
-.time {
-  font-size: 22px;
-  font-weight: 500;
-  white-space: nowrap;
+.openLink {
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  width: fit-content;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .metaColumn {
+  min-width: 13rem;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
+  gap: 0.85rem;
 }
 
-.previewButton {
+.time {
+  font-size: 1.05rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.previewButton,
+.editButton,
+.deleteButton {
+  width: 100%;
+  min-height: 2.6rem;
   border: none;
   border-radius: 999px;
-  padding: 6px 14px;
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 0 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.previewButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
+.previewButton,
+.editButton {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
 }
 
 .deleteButton {
-  border: none;
-  border-radius: 999px;
-  padding: 6px 14px;
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
+  background: rgba(125, 17, 17, 0.28);
+  color: #fff;
 }
 
+.previewButton:disabled,
 .deleteButton:disabled {
-  cursor: not-allowed;
   opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .preview {
-  margin: 0 21px 24px;
-  padding: 16px 18px;
-  border-radius: 16px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  margin-top: 0.9rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1.2rem;
+  background: #fff;
+  border: 1px solid #dfe7f4;
   color: #111827;
-  font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .previewError {
   color: #b00020;
-  font-size: 13px;
+  font-size: 0.88rem;
 }
 
 .preview :global(h1) {
-  font-size: 20px;
+  font-size: 1.25rem;
   margin-top: 0;
 }
 
 .preview :global(h2) {
-  font-size: 18px;
-  margin-top: 18px;
+  font-size: 1.12rem;
+  margin-top: 1rem;
 }
 
 .preview :global(h3) {
-  font-size: 16px;
-  margin-top: 16px;
-}
-
-.preview :global(p) {
-  margin: 0 0 12px;
-}
-
-.preview :global(code) {
-  background: #f3f4f6;
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 13px;
+  font-size: 1rem;
+  margin-top: 0.9rem;
 }
 
 .preview :global(pre) {
   background: #0f172a;
   color: #f9fafb;
-  padding: 12px 14px;
-  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
   overflow-x: auto;
+}
+
+@media (max-width: 900px) {
+  .card {
+    flex-direction: column;
+  }
+
+  .metaColumn {
+    min-width: 0;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 1rem;
+    border-radius: 1.25rem;
+  }
+
+  .title {
+    font-size: 1.18rem;
+  }
 }

@@ -1,0 +1,317 @@
+.page {
+  min-height: 100vh;
+  padding: 32px 0 64px;
+}
+
+.container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  color: #6b7a95;
+  font-size: 0.92rem;
+}
+
+.breadcrumbs a {
+  color: #0956c2;
+  text-decoration: none;
+}
+
+.stateCard,
+.hero,
+.contentCard,
+.materialsCard {
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(9, 86, 194, 0.08);
+  box-shadow: 0 1.25rem 2.5rem rgba(10, 41, 93, 0.08);
+}
+
+.stateCard {
+  padding: 1.25rem;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.heroMain {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.heroBadges {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.badge,
+.badgeSecondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.badge {
+  background: #e9f1ff;
+  color: #0956c2;
+}
+
+.badgeSecondary {
+  background: #f4f6fb;
+  color: #475569;
+}
+
+.title {
+  margin: 0;
+  color: #102a56;
+  font-size: clamp(1.75rem, 2.8vw, 2.7rem);
+  line-height: 1.1;
+}
+
+.description {
+  margin: 0;
+  color: #5f6f8c;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.metaCard {
+  padding: 1rem;
+  border-radius: 1.15rem;
+  background: #f7faff;
+  border: 1px solid #e1eaf8;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.metaLabel {
+  color: #70809a;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metaCard strong {
+  color: #102a56;
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+.heroAside {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ownerCard {
+  padding: 1rem;
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, #f6f9ff 0%, #eef4ff 100%);
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.ownerAvatar,
+.ownerAvatarFallback {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ownerAvatar {
+  object-fit: cover;
+  background: #dfeaff;
+}
+
+.ownerAvatarFallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #dfeaff;
+  color: #0956c2;
+  font-weight: 800;
+}
+
+.ownerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.ownerLabel {
+  color: #70809a;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ownerInfo strong {
+  color: #102a56;
+  font-size: 1rem;
+}
+
+.ownerInfo span {
+  color: #5f6f8c;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.primaryAction,
+.secondaryAction {
+  width: 100%;
+  min-height: 3rem;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryAction {
+  background: #0956c2;
+  color: #fff;
+}
+
+.secondaryAction {
+  background: #f3f6fb;
+  color: #102a56;
+}
+
+.contentGrid {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1.5rem;
+}
+
+.contentCard,
+.materialsCard {
+  padding: 1.5rem;
+}
+
+.cardHeader {
+  margin-bottom: 1rem;
+  color: #102a56;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.markdown {
+  color: #203250;
+  line-height: 1.75;
+}
+
+.markdown :global(h1),
+.markdown :global(h2),
+.markdown :global(h3) {
+  color: #102a56;
+}
+
+.markdown :global(pre) {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #0f172a;
+  overflow-x: auto;
+}
+
+.markdown :global(code) {
+  font-size: 0.92em;
+}
+
+.materialsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.materialItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.9rem;
+  align-items: center;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  background: #f7faff;
+  border: 1px solid #e1eaf8;
+  text-decoration: none;
+}
+
+.materialName {
+  color: #102a56;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.materialMeta {
+  color: #6b7a95;
+  font-size: 0.84rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.emptyText {
+  margin: 0;
+  color: #5f6f8c;
+  line-height: 1.7;
+}
+
+@media (max-width: 980px) {
+  .hero,
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .metaGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0 14px;
+  }
+
+  .hero,
+  .contentCard,
+  .materialsCard {
+    padding: 1rem;
+    border-radius: 1.2rem;
+  }
+
+  .ownerCard,
+  .materialItem {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}

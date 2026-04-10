@@ -55,6 +55,7 @@ export interface CreateCourseDTO {
 export interface UpdateCourseDTO {
   name: string;
   description: string;
+  handle?: string;
   tags: string[];
   maxUsersAmount: number;
 }

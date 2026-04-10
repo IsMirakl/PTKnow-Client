@@ -1,4 +1,7 @@
 import { memo } from 'react';
+
+import { AuthImage } from '../../AuthImage';
+import { useAuth } from '../../../hooks/useAuth';
 import type { CourseTeacherDTO } from '../../../types/CourseCard';
 import styles from '../../../styles/components/TeachersCard.module.css';
 
@@ -16,6 +19,8 @@ const getInitials = (name: string) => {
 };
 
 const TeachersCardComponent: React.FC<TeachersCardProps> = ({ teachers }) => {
+  const { user } = useAuth();
+
   return (
     <div className={styles.card}>
       <div className={styles.header}>Преподаватели</div>
@@ -26,9 +31,19 @@ const TeachersCardComponent: React.FC<TeachersCardProps> = ({ teachers }) => {
           {teachers.map(teacher => {
             const name =
               teacher.fullName || teacher.profileHandle || teacher.email || '—';
+            const isCurrentUser = Boolean(user && teacher.id === user.id);
+
             return (
               <div key={teacher.id} className={styles.teacherRow}>
-                <div className={styles.avatar}>{getInitials(name)}</div>
+                {isCurrentUser && user?.avatarUrl ? (
+                  <AuthImage
+                    src={user.avatarUrl}
+                    alt={name}
+                    className={styles.avatarImage}
+                  />
+                ) : (
+                  <div className={styles.avatar}>{getInitials(name)}</div>
+                )}
                 <div className={styles.teacherInfo}>
                   <span className={styles.teacherName}>{name}</span>
                   <span className={styles.teacherRole}>
